@@ -16,6 +16,7 @@ enum OsaurusLauncher {
     /// Launches `osaurus serve` detached. Returns false if no CLI was found.
     static func launch() -> Bool {
         guard let cli = cliPath else { return false }
+        let appWasOpen = osaurusAppRunning()
         let process = Process()
         process.executableURL = URL(fileURLWithPath: cli)
         process.arguments = ["serve"]
@@ -24,10 +25,27 @@ enum OsaurusLauncher {
         do {
             try process.run()
             NSLog("AskMyMac: started Osaurus via \(cli) serve")
+            reportToSwitchboard(kind: appWasOpen ? "server" : "app")
             return true
         } catch {
             NSLog("AskMyMac: failed to start Osaurus: \(error)")
             return false
         }
+    }
+
+    // Models run only while Ask My Mac or Switchboard is open (Tara, Oct 21): tell Switchboard's helper (7777)
+    // that we started Osaurus, so it stops it once neither app is running (also after a crash or force quit).
+    static func osaurusAppRunning() -> Bool {
+        let p = Process(); p.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+        p.arguments = ["-f", "osaurus.app/Contents/MacOS/osaurus"]; p.standardOutput = FileHandle.nullDevice
+        do { try p.run() } catch { return false }
+        p.waitUntilExit(); return p.terminationStatus == 0
+    }
+    static func reportToSwitchboard(kind: String) {
+        var r = URLRequest(url: URL(string: "http://127.0.0.1:7777/switchboard/owned")!)
+        r.httpMethod = "POST"; r.timeoutInterval = 3
+        r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        r.httpBody = try? JSONSerialization.data(withJSONObject: ["engine": "osaurus", "kind": kind, "by": "Ask My Mac"])
+        URLSession.shared.dataTask(with: r).resume()
     }
 }
