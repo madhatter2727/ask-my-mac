@@ -1,0 +1,2 @@
+Continue the Ask My Mac build per PROMPT.md in this folder (your previous run was interrupted before writing files). Write PLAN.md then all source files now — no more exploring beyond what's needed.
+ADDITION: Settings sheet must offer an endpoint URL field (default http://127.0.0.1:1337/v1) and a model Picker populated from GET <endpoint>/models (with Refresh button; default raptor-0.6-4b-jang_6m; persisted in UserDefaults) so Tara can swap to a better local model later.
